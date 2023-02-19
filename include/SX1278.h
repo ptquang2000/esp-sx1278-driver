@@ -5,8 +5,15 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
-#define MAX_FIFO_BUFFER    256
+#define MAX_FIFO_BUFFER             256
 
+#define DEFAULT_PREAMBLE_LENGTH     0x08
+#define DEFAULT_MODEM_CONFIG1       0x72
+#define DEFAULT_MODEM_CONFIG2       0x70
+#define DEFAULT_SYNC_WORD           0x24
+#define DEFAULT_INVERT_IQ           0x27
+#define DEFAULT_PA_CONFIG           0x8f
+#define DEFAULT_SX1278_RESET_PIN    0x04
 
 typedef struct FIFO_struct
 {
@@ -14,22 +21,6 @@ typedef struct FIFO_struct
     uint8_t size;
     uint8_t buffer[MAX_FIFO_BUFFER];
 } FIFO;
-
-typedef enum HeaderMode_enum {
-    ImplicitHeaderMode = 0,
-    ExplicitHeaderMode = 1
-} HeaderMode;
-
-typedef enum OperationMode_struct {
-    Sleep = 0,
-    Standby,
-    Fstx,
-    Tx,
-    Fxrx,
-    RxContinuous,
-    RxSingle,
-    Cad
-} OperationMode;
 
 typedef struct SX1278_struct
 {
@@ -45,5 +36,7 @@ void SX1278_fill_fifo(SX1278* dev, uint8_t* data, uint8_t len);
 void SX1278_start_tx(SX1278* dev);
 void SX1278_start_rx(SX1278* dev, OperationMode rx_mode, HeaderMode header_mode);
 uint8_t SX1278_get_fifo(SX1278* dev, uint8_t* data);
+void SX1278_reset();
+
 
 #endif

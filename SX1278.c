@@ -4,6 +4,8 @@
 #include "stdio.h"
 #include "esp_system.h"
 #include "driver/spi.h"
+#include "driver/gpio.h"
+
 
 #define SLEEP_MODE_DEFAULT          0b10000000
 #define STANDBY_MODE_DEFAULT        0b10000001
@@ -24,10 +26,6 @@
 #define LNA_DEFAULT                 0b00100000
 #define HEADER_MODE_MASK            0b00000001
 #define OPERATION_MODE_MASK         0b00000111
-
-#define DEFAULT_MODEM_CONFIG1       0x72
-#define DEFAULT_MODEM_CONFIG2       0x70
-#define DEFAULT_SYNC_WORD           0x24
 
 static TaskHandle_t tx_done_handle = NULL; 
 static TaskHandle_t rx_done_handle = NULL; 
@@ -92,6 +90,24 @@ void write_burst_access(uint8_t addr, uint8_t* data, uint8_t len)
     spi_trans(HSPI_HOST, &trans);
 }
 
+void SX1278_reset()
+{
+    gpio_config_t io_conf;
+    io_conf.intr_type = GPIO_INTR_DISABLE;
+    io_conf.mode = GPIO_MODE_OUTPUT;
+    io_conf.pin_bit_mask = 1ULL<<DEFAULT_SX1278_RESET_PIN;
+    io_conf.pull_down_en = 0;
+    io_conf.pull_up_en = 0;
+    
+    gpio_config(&io_conf);
+    gpio_set_level(DEFAULT_SX1278_RESET_PIN, 1);
+    vTaskDelay(1 / portTICK_PERIOD_MS);
+    gpio_set_level(DEFAULT_SX1278_RESET_PIN, 0);
+    vTaskDelay(1 / portTICK_PERIOD_MS);
+    gpio_set_level(DEFAULT_SX1278_RESET_PIN, 1);
+    vTaskDelay(5 / portTICK_PERIOD_MS);
+}
+
 void SX1278_fill_fifo(SX1278* dev, uint8_t* data, uint8_t len)
 {
     uint16_t size = dev->fifo.size + len;
@@ -124,7 +140,6 @@ void SX1278_wait_for_tx_done(void* p)
     {
         vTaskDelay(300 / portTICK_PERIOD_MS);
         flags = read_single_access(REG_IRQ_FLAGS);
-        debug();
         if ((flags & TX_DONE_MASK) != 0)
         {
             xTaskNotifyGive(dev->tx_done_handle);
@@ -146,7 +161,7 @@ void SX1278_start_tx(SX1278* dev)
     }
     write_single_access(REG_PAYLOAD_LENGTH, dev->fifo.size);
     write_single_access(REG_OPMODE, LORA_TX_MODE);
-    debug();
+    // debug();
     xTaskCreate(SX1278_wait_for_tx_done, "tx_done", 1024, (void*)dev, tskIDLE_PRIORITY, &tx_done_handle);
 }
 
@@ -178,7 +193,7 @@ void SX1278_wait_for_rx_done(void* p)
                 }
             }
 
-            debug();
+            // debug();
             write_single_access(REG_IRQ_FLAGS, flags & (RX_DONE_MASK ^ 1));
             write_single_access(REG_IRQ_FLAGS, flags & (VALID_HEADER_MASK ^ 1));
             write_single_access(REG_IRQ_FLAGS, flags & (PAYLOAD_CRC_ERROR_MASK ^ 1));
@@ -223,6 +238,8 @@ void SX1278_start_rx(SX1278* dev, OperationMode rx_mode, HeaderMode header_mode)
 
 SX1278* SX1278_create(SX1278Settings* settings)
 {
+    SX1278_reset();
+
     SX1278* device = malloc(sizeof(SX1278));
     device->fifo.size = 0;
     device->fifo.expected_size = 0;
@@ -238,13 +255,14 @@ SX1278* SX1278_create(SX1278Settings* settings)
 
     write_single_access(REG_OPMODE, SLEEP_MODE_DEFAULT);
     write_single_access(REG_OPMODE, LORA_MODE);
-    write_single_access(REG_PA_CONFIG, 0x8f);
 
-    write_single_access(REG_MODEM_CONFIG1, DEFAULT_MODEM_CONFIG1);
-    write_single_access(REG_MODEM_CONFIG2, DEFAULT_MODEM_CONFIG2);
-    write_single_access(REG_SYNC_WORD, DEFAULT_SYNC_WORD);
+    write_single_access(REG_PA_CONFIG, settings->pa_config.val);
+    write_single_access(REG_MODEM_CONFIG1, settings->modem_config1.val);
+    write_single_access(REG_MODEM_CONFIG2, settings->modem_config2.val);
+    write_single_access(REG_SYNC_WORD, settings->sync_word);
+    write_single_access(REG_INVERT_IQ, settings->invert_iq.val);
 
-    debug();
+    // debug();
     return device;
 }
 

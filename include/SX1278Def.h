@@ -50,32 +50,75 @@
 #define REG_VERSION                     0x42
 
 
+typedef enum HeaderMode_enum {
+    ImplicitHeaderMode = 0,
+    ExplicitHeaderMode = 1
+} HeaderMode;
+
+typedef enum OperationMode_struct {
+    Sleep = 0,
+    Standby,
+    Fstx,
+    Tx,
+    Fxrx,
+    RxContinuous,
+    RxSingle,
+    Cad
+} OperationMode;
+
+typedef enum CodingRate_enum
+{
+    CR5 = 1,
+    CR6,
+    CR7,
+    CR8
+} CodingRate;
+
+typedef enum SpreadingFactor_enum
+{
+    SF7 = 7,
+    SF8,
+    SF9,
+    SF10,
+    SF11,
+    SF12,
+} SpreadingFactor;
+
 typedef struct SX1278Settings_struct
 {
+    union {
+        struct {
+            uint8_t output_power: 4;
+            uint8_t max_power: 3;
+            uint8_t pa_select: 1;
+        } bits;
+        uint8_t val;
+    } pa_config;
     uint16_t preamble_len;
     union {
         struct {
-            uint8_t bandwidth: 4;
-            uint8_t coding_rate: 3;
             uint8_t implicit_header_on: 1;
+            uint8_t coding_rate: 3;
+            uint8_t bandwidth: 4;
         } bits;
         uint8_t val;
     } modem_config1;
     union {
         struct {
-            uint8_t spreading_factor: 4;
-            uint8_t tx_continuous_mode: 1;
-            uint8_t rx_payload_crc_on: 1;
             uint8_t symb_timeout: 2;
+            uint8_t rx_payload_crc_on: 1;
+            uint8_t tx_continuous_mode: 1;
+            uint8_t spreading_factor: 4;
         } bits;
         uint8_t val;
     } modem_config2;
     union {
         struct {
-            uint8_t reserverd1: 1;
-            uint8_t mode: 1;
             uint8_t reserverd2: 6;
+            uint8_t mode: 1;
+            uint8_t reserverd1: 1;
         } bits;
+        uint8_t val;
     } invert_iq;
     uint8_t sync_word;
 } SX1278Settings;
