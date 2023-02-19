@@ -27,7 +27,7 @@
 
 #define DEFAULT_MODEM_CONFIG1       0x72
 #define DEFAULT_MODEM_CONFIG2       0x70
-#define DEFAULT_SYNC_WORD           0x12
+#define DEFAULT_SYNC_WORD           0x24
 
 static TaskHandle_t tx_done_handle = NULL; 
 static TaskHandle_t rx_done_handle = NULL; 
@@ -111,6 +111,7 @@ static void debug()
     printf("mode: %02x\n", read_single_access(REG_OPMODE));
     printf("config1: %02x\n", read_single_access(REG_MODEM_CONFIG1));
     printf("config2: %02x\n", read_single_access(REG_MODEM_CONFIG2));
+    printf("freq: %02x%02x%02x\n", read_single_access(REG_FR_MSB), read_single_access(REG_FR_MID), read_single_access(REG_FR_LSB));
     printf("sync: %02x\n", read_single_access(REG_SYNC_WORD));
     printf("-----------------------------------------------------------------\n");
 }
@@ -165,7 +166,6 @@ void SX1278_wait_for_rx_done(void* p)
             if ((flags & VALID_HEADER_MASK) != 0 && valid_crc == 0)
             {
                 pfifo = read_single_access(REG_FIFO_RX_CURRENT_ADDR);
-                printf("current rx %02x\n", pfifo);
                 dev->fifo.size = hmode == 0 ? read_single_access(REG_RX_NB_BYTES) : read_single_access(REG_PAYLOAD_LENGTH);
                 write_single_access(REG_FIFO_ADDR_PTR, pfifo);
                 for (uint8_t i = 0; i < dev->fifo.size; i++)
@@ -238,11 +238,13 @@ SX1278* SX1278_create(SX1278Settings* settings)
 
     write_single_access(REG_OPMODE, SLEEP_MODE_DEFAULT);
     write_single_access(REG_OPMODE, LORA_MODE);
+    write_single_access(REG_PA_CONFIG, 0x8f);
 
     write_single_access(REG_MODEM_CONFIG1, DEFAULT_MODEM_CONFIG1);
     write_single_access(REG_MODEM_CONFIG2, DEFAULT_MODEM_CONFIG2);
     write_single_access(REG_SYNC_WORD, DEFAULT_SYNC_WORD);
 
+    debug();
     return device;
 }
 
