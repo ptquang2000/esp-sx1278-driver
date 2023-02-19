@@ -1,0 +1,1 @@
+idf_component_register(SRCS "SX1278.c" INCLUDE_DIRS "include")
