@@ -236,6 +236,16 @@ void SX1278_start_rx(SX1278* dev, OperationMode rx_mode, HeaderMode header_mode)
     xTaskCreate(SX1278_wait_for_rx_done, "rx_done", 1024, (void*)dev, tskIDLE_PRIORITY, &rx_done_handle);
 }
 
+void SX1278_switch_mode(SX1278* dev, OperationMode mode)
+{
+    if ((read_single_access(REG_OPMODE) & OPERATION_MODE_MASK) == RxContinuous)
+    {
+        xTaskNotifyGive(dev->rx_done_handle);
+        vTaskDelete(dev->rx_done_handle);
+    }
+    write_single_access(REG_OPMODE, LORA_MODE | mode);
+}
+
 SX1278* SX1278_create(SX1278Settings* settings)
 {
     SX1278_reset();
@@ -269,4 +279,5 @@ SX1278* SX1278_create(SX1278Settings* settings)
 void SX1278_destroy(SX1278* device)
 {
     free(device);
+    spi_deinit(HSPI_HOST);
 }

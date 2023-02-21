@@ -32,6 +32,7 @@ typedef struct SX1278_struct
 
 SX1278* SX1278_create(SX1278Settings* settings);
 void SX1278_destroy(SX1278* dev);
+void SX1278_switch_mode(SX1278* dev, OperationMode mode);
 void SX1278_fill_fifo(SX1278* dev, uint8_t* data, uint8_t len);
 void SX1278_start_tx(SX1278* dev);
 void SX1278_start_rx(SX1278* dev, OperationMode rx_mode, HeaderMode header_mode);

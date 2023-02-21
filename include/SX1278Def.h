@@ -74,6 +74,20 @@ typedef enum CodingRate_enum
     CR8
 } CodingRate;
 
+typedef enum Bandwidth_enum
+{
+    Bw7_8kHz = 0,
+    Bw10_4kHz,
+    Bw15_6kHz,
+    Bw20_8kHz,
+    Bw31_25kHz,
+    Bw41_7kHz,
+    Bw62_5kHz,
+    Bw125kHz,
+    Bw250kHz,
+    Bw500kHz
+} Bandwidth;
+
 typedef enum SpreadingFactor_enum
 {
     SF7 = 7,
