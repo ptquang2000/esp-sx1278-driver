@@ -128,6 +128,8 @@ static void debug()
     printf("config1: %02x\n", read_single_access(REG_MODEM_CONFIG1));
     printf("config2: %02x\n", read_single_access(REG_MODEM_CONFIG2));
     printf("freq: %02x%02x%02x\n", read_single_access(REG_FR_MSB), read_single_access(REG_FR_MID), read_single_access(REG_FR_LSB));
+    printf("inv iq: %02x\n", read_single_access(REG_INVERT_IQ));
+    printf("pa: %02x\n", read_single_access(REG_PA_CONFIG));
     printf("sync: %02x\n", read_single_access(REG_SYNC_WORD));
     printf("-----------------------------------------------------------------\n");
 }
@@ -191,6 +193,17 @@ void SX1278_wait_for_rx_done(void* p)
                 {
                     write_single_access(REG_FIFO_ADDR_PTR, BASE_FIFO_ADDR);
                 }
+
+                uint8_t rssi = read_single_access(REG_PKT_RSSI_VALUE);
+                if (dev->settings.channel_freq > MID_RANGE_FREQ_THRESHOLD)
+                {
+                    dev->pkt_status.rssi = RSSI_OFFSET_HF + rssi + (rssi >> 4);
+                }
+                else
+                {
+                    dev->pkt_status.rssi = RSSI_OFFSET_LF + rssi + (rssi >> 4);
+                }
+                dev->pkt_status.snr = (int8_t)read_single_access(REG_PKT_SNR_VALUE) / 4;
             }
 
             // debug();
@@ -246,7 +259,7 @@ void SX1278_switch_mode(SX1278* dev, OperationMode mode)
     write_single_access(REG_OPMODE, LORA_MODE | mode);
 }
 
-SX1278* SX1278_create(SX1278Settings* settings)
+SX1278* SX1278_create()
 {
     SX1278_reset();
 
@@ -263,16 +276,8 @@ SX1278* SX1278_create(SX1278Settings* settings)
     spi_config.clk_div = SPI_10MHz_DIV;
     spi_init(HSPI_HOST, &spi_config);
 
-    write_single_access(REG_OPMODE, SLEEP_MODE_DEFAULT);
-    write_single_access(REG_OPMODE, LORA_MODE);
+    vTaskDelay(200 / portTICK_PERIOD_MS);
 
-    write_single_access(REG_PA_CONFIG, settings->pa_config.val);
-    write_single_access(REG_MODEM_CONFIG1, settings->modem_config1.val);
-    write_single_access(REG_MODEM_CONFIG2, settings->modem_config2.val);
-    write_single_access(REG_SYNC_WORD, settings->sync_word);
-    write_single_access(REG_INVERT_IQ, settings->invert_iq.val);
-
-    // debug();
     return device;
 }
 
@@ -280,4 +285,48 @@ void SX1278_destroy(SX1278* device)
 {
     free(device);
     spi_deinit(HSPI_HOST);
+    
+    vTaskDelay(200 / portTICK_PERIOD_MS);
+}
+
+
+void SX1278_initialize(SX1278* device, SX1278Settings* settings)
+{
+    write_single_access(REG_OPMODE, SLEEP_MODE_DEFAULT);
+    write_single_access(REG_OPMODE, LORA_MODE);
+
+    SX1278_set_frequency(device, settings->channel_freq);
+    write_single_access(REG_PA_CONFIG, settings->pa_config.val);
+    write_single_access(REG_MODEM_CONFIG1, settings->modem_config1.val);
+    write_single_access(REG_MODEM_CONFIG2, settings->modem_config2.val);
+    write_single_access(REG_SYNC_WORD, settings->sync_word);
+    write_single_access(REG_INVERT_IQ, settings->invert_iq.val);
+
+    vTaskDelay(200 / portTICK_PERIOD_MS);
+    debug();
+}
+
+void SX1278_set_txpower(SX1278* device, TxPower txpower)
+{
+    uint8_t mode = read_single_access(REG_OPMODE);
+    write_single_access(REG_OPMODE, STANDBY_MODE_DEFAULT);
+
+    uint8_t pa_config = (DEFAULT_PA_CONFIG & 0b1111) | txpower;
+    write_single_access(REG_PA_CONFIG, pa_config);
+
+    write_single_access(REG_OPMODE, mode);
+}
+
+void SX1278_set_frequency(SX1278* device, ChannelFrequency freq)
+{
+    uint8_t mode = read_single_access(REG_OPMODE);
+    write_single_access(REG_OPMODE, STANDBY_MODE_DEFAULT);
+
+    write_single_access(REG_FR_LSB, freq & 0xff);
+    freq = freq >> 8;
+    write_single_access(REG_FR_MID, freq & 0xff);
+    freq = freq >> 8;
+    write_single_access(REG_FR_MSB, freq & 0xff);
+
+    write_single_access(REG_OPMODE, mode);
 }

@@ -98,8 +98,26 @@ typedef enum SpreadingFactor_enum
     SF12,
 } SpreadingFactor;
 
+typedef enum TxPower_enum
+{
+    TxPower5 = 0,
+    TxPower4 = 1,
+    TxPower3 = 2,
+    TxPower2 = 4,
+    TxPower1 = 8,
+    TxPower0 = 14,
+} TxPower;
+
+typedef enum ChannelFrequency_enum
+{
+    RF433_175MHZ = 0x6C8B35,
+    RF433_375MHZ = 0x6C9800,
+    RF433_575MHZ = 0x6CA4CD,
+} ChannelFrequency;
+
 typedef struct SX1278Settings_struct
 {
+    ChannelFrequency channel_freq;
     union {
         struct {
             uint8_t output_power: 4;
