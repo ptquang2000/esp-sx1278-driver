@@ -330,3 +330,8 @@ void SX1278_set_frequency(SX1278* device, ChannelFrequency freq)
 
     write_single_access(REG_OPMODE, mode);
 }
+
+void SX1278_set_iq(SX1278* device, uint8_t value)
+{
+    write_single_access(REG_INVERT_IQ, value);
+}

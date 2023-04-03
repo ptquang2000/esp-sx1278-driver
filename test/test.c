@@ -17,6 +17,12 @@ static uint8_t expected[] = {'s', 'x', '1', '2', '7', '8'};
 SX1278* dev;
 static uint8_t task_done = 1;
 
+void app_main(void)
+{
+    dev = SX1278_create();
+    unity_run_menu();
+}
+
 void on_tx_done(void* p)
 {
     SX1278* dev = p;
@@ -41,16 +47,6 @@ void on_rx_done(void* p)
             vTaskDelete(dev->rx_done_handle);
         }
     }
-}
-
-TEST_CASE("create device", "[init]")
-{
-    dev = SX1278_create();
-}
-
-TEST_CASE("destroy device", "[init]")
-{
-    SX1278_destroy(dev);
 }
 
 static void sender()
