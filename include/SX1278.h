@@ -32,8 +32,8 @@ typedef struct FIFO_struct
 
 typedef struct PacketStatus_struct
 {
-    int8_t snr;
-    int8_t rssi;
+    double snr;
+    double rssi;
 } PacketStatus;
 
 typedef struct SX1278_struct
@@ -55,7 +55,6 @@ uint8_t SX1278_get_fifo(SX1278* dev, uint8_t* data);
 void SX1278_reset();
 void SX1278_set_frequency(SX1278* device, ChannelFrequency freq);
 void SX1278_set_txpower(SX1278* device, TxPower txpower);
-void SX1278_set_iq(SX1278* device, uint8_t value);
 void SX1278_initialize(SX1278* device, SX1278Settings* settings);
 
 

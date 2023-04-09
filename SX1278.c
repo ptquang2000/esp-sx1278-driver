@@ -129,6 +129,7 @@ static void debug()
     printf("config2: %02x\n", read_single_access(REG_MODEM_CONFIG2));
     printf("freq: %02x%02x%02x\n", read_single_access(REG_FR_MSB), read_single_access(REG_FR_MID), read_single_access(REG_FR_LSB));
     printf("inv iq: %02x\n", read_single_access(REG_INVERT_IQ));
+    printf("inv iq 2: %02x\n", read_single_access(REG_INVERT_IQ2));
     printf("pa: %02x\n", read_single_access(REG_PA_CONFIG));
     printf("sync: %02x\n", read_single_access(REG_SYNC_WORD));
     printf("-----------------------------------------------------------------\n");
@@ -303,7 +304,7 @@ void SX1278_initialize(SX1278* device, SX1278Settings* settings)
     write_single_access(REG_INVERT_IQ, settings->invert_iq.val);
 
     vTaskDelay(200 / portTICK_PERIOD_MS);
-    debug();
+    // debug();
 }
 
 void SX1278_set_txpower(SX1278* device, TxPower txpower)
@@ -329,9 +330,4 @@ void SX1278_set_frequency(SX1278* device, ChannelFrequency freq)
     write_single_access(REG_FR_MSB, freq & 0xff);
 
     write_single_access(REG_OPMODE, mode);
-}
-
-void SX1278_set_iq(SX1278* device, uint8_t value)
-{
-    write_single_access(REG_INVERT_IQ, value);
 }

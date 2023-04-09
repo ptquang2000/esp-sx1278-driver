@@ -124,36 +124,36 @@ TEST_CASE_MULTIPLE_DEVICES("Test CRC empty", "[sx1278][CRC]", crc_empty_sender, 
 
 static void iq_normal_sender()
 {
-    settings.invert_iq.bits.mode = 0;
+    settings.invert_iq.bits.tx = 1;
     SX1278_initialize(dev, &settings);
     sender();
-    settings.invert_iq.val = DEFAULT_INVERT_IQ;
+    settings.invert_iq.val = DEFAULT_NORMAL_IQ;
 }
 
 static void iq_normal_receiver()
 {
-    settings.invert_iq.bits.mode = 0;
+    settings.invert_iq.bits.rx = 0;
     SX1278_initialize(dev, &settings);
     receiver();
-    settings.invert_iq.val = DEFAULT_INVERT_IQ;
+    settings.invert_iq.val = DEFAULT_NORMAL_IQ;
 }
 
 TEST_CASE_MULTIPLE_DEVICES("Test Lora IQ normal", "[sx1278][IQ]", iq_normal_sender, iq_normal_receiver);
 
 static void iq_inverted_sender()
 {
-    settings.invert_iq.val = 0x66;
+    settings.invert_iq.bits.tx = 0;
     SX1278_initialize(dev, &settings);
     sender();
-    settings.invert_iq.val = DEFAULT_INVERT_IQ;
+    settings.invert_iq.val = DEFAULT_NORMAL_IQ;
 }
 
 static void iq_inverted_receiver()
 {
-    settings.invert_iq.val = 0x66;
+    settings.invert_iq.bits.rx = 1;
     SX1278_initialize(dev, &settings);
     receiver();
-    settings.invert_iq.val = DEFAULT_INVERT_IQ;
+    settings.invert_iq.val = DEFAULT_NORMAL_IQ;
 }
 
 TEST_CASE_MULTIPLE_DEVICES("Test Lora IQ inverted", "[sx1278][IQ]", iq_inverted_sender, iq_inverted_receiver);

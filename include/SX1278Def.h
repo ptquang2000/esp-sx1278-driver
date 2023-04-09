@@ -47,6 +47,7 @@
 #define REG_INVERT_IQ                   0x33
 #define REG_DETECTION_THRESHOLD         0x37
 #define REG_SYNC_WORD                   0x39
+#define REG_INVERT_IQ2                  0x3B
 #define REG_VERSION                     0x42
 
 
@@ -146,8 +147,9 @@ typedef struct SX1278Settings_struct
     } modem_config2;
     union {
         struct {
-            uint8_t reserverd2: 6;
-            uint8_t mode: 1;
+            uint8_t tx: 1;
+            uint8_t reserverd2: 5;
+            uint8_t rx: 1;
             uint8_t reserverd1: 1;
         } bits;
         uint8_t val;
