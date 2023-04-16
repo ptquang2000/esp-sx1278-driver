@@ -5,7 +5,7 @@
 #include "esp_system.h"
 #include "driver/spi.h"
 #include "driver/gpio.h"
-
+#include "esp_log.h"
 
 #define SLEEP_MODE_DEFAULT          0b10000000
 #define STANDBY_MODE_DEFAULT        0b10000001
@@ -28,7 +28,9 @@
 #define OPERATION_MODE_MASK         0b00000111
 
 static TaskHandle_t tx_done_handle = NULL; 
-static TaskHandle_t rx_done_handle = NULL; 
+static TaskHandle_t rx_done_handle = NULL;
+
+static const char* TAG = "SX1278";
 
 
 uint8_t read_single_access(uint8_t addr)
@@ -165,7 +167,7 @@ void SX1278_start_tx(SX1278* dev)
     write_single_access(REG_PAYLOAD_LENGTH, dev->fifo.size);
     write_single_access(REG_OPMODE, LORA_TX_MODE);
     // debug();
-    xTaskCreate(SX1278_wait_for_tx_done, "tx_done", 1024, (void*)dev, tskIDLE_PRIORITY + 1, &tx_done_handle);
+    xTaskCreate(SX1278_wait_for_tx_done, "tx_done", 1024, (void*)dev, tskIDLE_PRIORITY, &tx_done_handle);
 }
 
 void SX1278_wait_for_rx_done(void* p)
@@ -214,6 +216,7 @@ void SX1278_wait_for_rx_done(void* p)
             xTaskNotifyGive(dev->rx_done_handle);
             if (rxmode == RxSingle)
             {
+                ESP_LOGI(TAG, "Rx done");
                 vTaskDelete(rx_done_handle);
             }
         }
@@ -247,7 +250,7 @@ void SX1278_start_rx(SX1278* dev, OperationMode rx_mode, HeaderMode header_mode)
     case RxSingle: write_single_access(REG_OPMODE, LORA_RX_SINGLE_MODE); break;
     default: ESP_ERROR_CHECK(1); break;
     }
-    xTaskCreate(SX1278_wait_for_rx_done, "rx_done", 1024, (void*)dev, tskIDLE_PRIORITY + 1, &rx_done_handle);
+    xTaskCreate(SX1278_wait_for_rx_done, "rx_done", 1024, (void*)dev, tskIDLE_PRIORITY, &rx_done_handle);
 }
 
 void SX1278_switch_mode(SX1278* dev, OperationMode mode)
