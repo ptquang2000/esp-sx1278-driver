@@ -13,7 +13,8 @@ static SX1278Settings settings = {
     .sync_word = DEFAULT_SYNC_WORD,
     .invert_iq.val = DEFAULT_NORMAL_IQ,
 };
-static uint8_t expected[] = {'s', 'x', '1', '2', '7', '8'};
+// static uint8_t expected[] = {'s', 'x', '1', '2', '7', '8'};
+static uint8_t expected[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 254, 255, 255, 0, 0, 10, 170, 170, 0, 0, 180, 62, 5, 247};
 SX1278* dev;
 static uint8_t task_done = 1;
 
