@@ -2,6 +2,7 @@
 #include "stdlib.h"
 #include "string.h"
 #include "stdio.h"
+#include "math.h"
 #include "esp_system.h"
 #include "driver/spi.h"
 #include "driver/gpio.h"
@@ -90,6 +91,8 @@ void write_burst_access(uint8_t addr, uint8_t* data, uint8_t len)
     trans.bits.mosi = 8 * len;
 
     spi_trans(HSPI_HOST, &trans);
+
+    free(mosi);
 }
 
 void SX1278_reset()
@@ -258,7 +261,7 @@ void SX1278_switch_mode(SX1278* dev, OperationMode mode)
     if ((read_single_access(REG_OPMODE) & OPERATION_MODE_MASK) == RxContinuous)
     {
         xTaskNotifyGive(dev->rx_done_handle);
-        vTaskDelete(dev->rx_done_handle);
+        vTaskDelete(rx_done_handle);
     }
     write_single_access(REG_OPMODE, LORA_MODE | mode);
 }
@@ -306,6 +309,8 @@ void SX1278_initialize(SX1278* device, SX1278Settings* settings)
     write_single_access(REG_SYNC_WORD, settings->sync_word);
     write_single_access(REG_INVERT_IQ, settings->invert_iq.val);
 
+    memcpy(&device->settings, settings, sizeof(SX1278Settings));
+
     vTaskDelay(200 / portTICK_PERIOD_MS);
     // debug();
 }
@@ -333,4 +338,38 @@ void SX1278_set_frequency(SX1278* device, ChannelFrequency freq)
     write_single_access(REG_FR_MSB, freq & 0xff);
 
     write_single_access(REG_OPMODE, mode);
+}
+
+double SX1278_get_toa(SX1278* device)
+{
+    double PL = device->fifo.size;
+    double SF = device->settings.modem_config2.bits.spreading_factor;
+    double IH = device->settings.modem_config1.bits.implicit_header_on;
+    double DE = (read_single_access(REG_MODEM_CONFIG3) >> 4) & 1;
+    double CR =  device->settings.modem_config1.bits.coding_rate;
+    uint8_t bw = device->settings.modem_config1.bits.bandwidth;
+    double BW = bw == Bw7_8kHz ? 7.8 : 
+                bw == Bw10_4kHz ? 10.4 :
+                bw == Bw15_6kHz ? 15.6 :
+                bw == Bw20_8kHz ? 20.8 :
+                bw == Bw31_25kHz ? 31.2 :
+                bw == Bw41_7kHz ? 41.7 :
+                bw == Bw62_5kHz ? 62.5 :
+                bw == Bw125kHz ? 125 :
+                bw == Bw250kHz ? 250 :
+                500;
+
+    double T_sym = pow(2, SF) / BW;
+
+    double T_preamble = (device->settings.preamble_len + 4.25) * T_sym;
+
+    double temp_a = 8 * PL - 4 * SF + 28 + 16 * CR - 20 * IH;
+    double temp_b = 4 * (SF - 2 * DE);
+    double temp_c = ceil(temp_a / temp_b) * (CR + 4);
+    double temp = temp_c > 0 ? temp_c : 0;
+    double payload = 8 + temp;
+
+    double T_payload = payload * T_sym;
+
+    return T_preamble + T_payload;
 }

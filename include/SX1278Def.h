@@ -52,8 +52,8 @@
 
 
 typedef enum HeaderMode_enum {
-    ImplicitHeaderMode = 0,
-    ExplicitHeaderMode = 1
+    ExplicitHeaderMode = 0,
+    ImplicitHeaderMode = 1
 } HeaderMode;
 
 typedef enum OperationMode_struct {

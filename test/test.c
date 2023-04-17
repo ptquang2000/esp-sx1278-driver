@@ -3,6 +3,7 @@
 #include "SX1278.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "esp_log.h"
 
 static SX1278Settings settings = {
     .channel_freq = DEFAULT_SX1278_FREQUENCY,
@@ -52,35 +53,45 @@ void on_rx_done(void* p)
 
 static void sender()
 {
+    task_done = 1;
     xTaskCreate(on_tx_done, "tx_done", 1024, (void*)dev, tskIDLE_PRIORITY, &dev->tx_done_handle);
     dev->fifo.size = 0;
     SX1278_fill_fifo(dev, expected, sizeof(expected));
     SX1278_start_tx(dev);
     
     while (task_done) { vTaskDelay(100 / portTICK_PERIOD_MS); };
-    task_done = 1;
     unity_send_signal("Sender sent");
+    ESP_LOGI("SX1278", "Time on air: %f", SX1278_get_toa(dev));
 }
 
 static void receiver()
 {
+    task_done = 1;
     xTaskCreate(on_rx_done, "rx_done", 1024, (void*)dev, tskIDLE_PRIORITY, &dev->rx_done_handle);
     SX1278_start_rx(dev, RxContinuous, ExplicitHeaderMode);
 
     unity_send_signal("Receiver ready");
     long start = xTaskGetTickCount();
+    uint8_t isTimeOut = 0;
     while (task_done) 
     { 
         long time = (xTaskGetTickCount() - start) * portTICK_PERIOD_MS;
         if (time > 5000) 
         { 
-            TEST_FAIL_MESSAGE("Timeout 5 seconds");
-            SX1278_switch_mode(dev, Sleep);
+            isTimeOut = 1;
+            break;
         }
         vTaskDelay(100 / portTICK_PERIOD_MS); 
     };
-    TEST_ASSERT_EQUAL_UINT8_ARRAY(expected, dev->fifo.buffer, sizeof(expected));
-    task_done = 1;
+    SX1278_switch_mode(dev, Sleep);
+    if (!isTimeOut)
+    {
+        TEST_ASSERT_EQUAL_UINT8_ARRAY(expected, dev->fifo.buffer, sizeof(expected));
+    }
+    else 
+    {
+        TEST_FAIL_MESSAGE("Time out for 5 secs");
+    }
 }
 
 /////////////////////////////   CRC    /////////////////////////////////////////
