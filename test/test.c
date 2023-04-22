@@ -94,6 +94,50 @@ static void receiver()
     }
 }
 
+///////////////////////////   Custome    ///////////////////////////////////////
+
+static void custome_sender()
+{
+    settings.pa_config.bits.output_power = TxPower0;
+    settings.channel_freq = RF433_175MHZ;
+    settings.modem_config1.bits.bandwidth = Bw125kHz;
+    settings.modem_config2.bits.spreading_factor = SF11;
+    settings.modem_config2.bits.rx_payload_crc_on = 0;
+    settings.invert_iq.val = DEFAULT_NORMAL_IQ;
+    settings.invert_iq.bits.tx = 0;
+    SX1278_initialize(dev, &settings);
+
+    sender();
+
+    settings.pa_config.val = DEFAULT_PA_CONFIG;
+    settings.channel_freq = DEFAULT_SX1278_FREQUENCY;
+    settings.modem_config1.val = DEFAULT_MODEM_CONFIG1;
+    settings.modem_config2.val = DEFAULT_MODEM_CONFIG2;
+    settings.invert_iq.val = DEFAULT_NORMAL_IQ;
+}
+
+static void custome_receiver()
+{
+    settings.pa_config.bits.output_power = TxPower0;
+    settings.channel_freq = RF433_175MHZ;
+    settings.modem_config1.bits.bandwidth = Bw125kHz;
+    settings.modem_config2.bits.spreading_factor = SF11;
+    settings.modem_config2.bits.rx_payload_crc_on = 0;
+    settings.invert_iq.val = DEFAULT_NORMAL_IQ;
+    settings.invert_iq.bits.rx = 1;
+    SX1278_initialize(dev, &settings);
+
+    receiver();
+
+    settings.pa_config.val = DEFAULT_PA_CONFIG;
+    settings.channel_freq = DEFAULT_SX1278_FREQUENCY;
+    settings.modem_config1.val = DEFAULT_MODEM_CONFIG1;
+    settings.modem_config2.val = DEFAULT_MODEM_CONFIG2;
+    settings.invert_iq.val = DEFAULT_NORMAL_IQ;
+}
+
+TEST_CASE_MULTIPLE_DEVICES("Test custome", "[sx1278][CRC]", custome_sender, custome_receiver);
+
 /////////////////////////////   CRC    /////////////////////////////////////////
 
 static void crc_presence_sender()

@@ -225,6 +225,7 @@ void SX1278_wait_for_rx_done(void* p)
         }
         else if ((flags & RX_TIMEOUT_MASK) != 0)
         {
+            // ESP_LOGI(TAG, "Rx timeout");
             dev->fifo.size = 0;
             write_single_access(REG_IRQ_FLAGS, flags & (RX_TIMEOUT_MASK ^ 1));
             xTaskNotifyGive(dev->rx_done_handle);
@@ -232,6 +233,7 @@ void SX1278_wait_for_rx_done(void* p)
         }
         else
         {
+            // ESP_LOGI(TAG, "Delay");
             vTaskDelay(100 / portTICK_PERIOD_MS);
         }
     }
